@@ -4,6 +4,8 @@ Represents the SauceDemo products/inventory page
 """
 
 import logging
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from pages.page_base import BasePage
 
@@ -77,7 +79,7 @@ class ProductsPage(BasePage):
 
         except Exception as e:
             logger.error(f"❌ Failed to get product names: {e}")
-            return []  # ✅ Return empty list on error
+            return []  # ❌ Return empty list on error
 
     def get_product_prices(self):
         """Get list of all product prices"""
@@ -99,7 +101,7 @@ class ProductsPage(BasePage):
 
         except Exception as e:
             logger.error(f"❌ Failed to get product prices: {e}")
-            return []  # ✅ Return empty list on error
+            return []  # ❌ Return empty list on error
 
     def add_product_to_cart_by_name(self, product_name):
         """
@@ -134,86 +136,85 @@ class ProductsPage(BasePage):
                         By.CSS_SELECTOR, "button[id^='add-to-cart']"
                     )
 
-                    # Scroll to button (if needed)
-                    self.driver.execute_script(
-                        "arguments[0].scrollIntoView(true);", add_button
-                    )
+                    # Use JavaScript click for reliability in headless mode
+                    self.driver.execute_script("arguments[0].click();", add_button)
+                    logger.debug("Clicked add to cart button using JavaScript")
 
-                    add_button.click()
+                    # Wait for cart badge to appear
+                    try:
+                        WebDriverWait(self.driver, 5).until(
+                            EC.presence_of_element_located(self.SHOPPING_CART_BADGE)
+                        )
+                        logger.debug("✅ Cart badge appeared")
+                    except Exception as e:  # ✅ Fixed: was bare except
+                        logger.warning(
+                            f"⚠️ Cart badge did not appear after 5 seconds: {e}"
+                        )
 
                     logger.info(f"✅ Successfully added '{product_name}' to cart")
                     return True
 
             # If we get here, product wasn't found
             logger.warning(f"⚠️ Product '{product_name}' not found on page")
-            available_products = [
-                p.find_element(By.CLASS_NAME, "inventory_item_name").text
-                for p in products
-            ]
-            logger.debug(f"Available products: {available_products}")
             return False
 
         except Exception as e:
             logger.error(f"❌ Failed to add '{product_name}' to cart: {e}")
+            import traceback
+
+            logger.error(traceback.format_exc())
             return False
 
     def get_cart_badge_count(self):
-        """
-        Get number shown on shopping cart badge
-        Returns 0 if cart is empty (no badge visible)
-        """
-        logger.debug("Getting cart badge count")
-
+        """Get number shown on shopping cart badge. Returns 0 if cart is empty."""
         try:
-            # Badge only exists when cart has items
-            if self.is_visible(self.SHOPPING_CART_BADGE, timeout=2):
-                badge = self.find_element(self.SHOPPING_CART_BADGE)
-                count = int(badge.text)
-                logger.info(f"✅ Cart badge shows: {count} items")
-                return count
-            else:
-                logger.info("✅ Cart is empty (no badge visible)")
-                return 0
+            # Try to find visible badge (wait up to 5 seconds)
+            badge = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located(self.SHOPPING_CART_BADGE)
+            )
 
-        except ValueError as e:
-            logger.error(f"❌ Badge text is not a number: {e}")
-            return 0
+            # Get and clean the text
+            count_text = badge.text.strip().strip("()")
+            count = int(count_text)
+
+            logger.info(f"✅ Cart has {count} items")
+            return count
+
         except Exception as e:
-            logger.error(f"❌ Failed to get cart badge count: {e}")
+            # Badge doesn't exist = cart is empty
+            logger.debug(f"No badge found (cart empty): {e}")
             return 0
 
     def select_sort_option(self, option):
-        """
-        Select sort option from dropdown
-
-        Args:
-            option (str): Sort option value
-                - "az" = Name (A to Z)
-                - "za" = Name (Z to A)
-                - "lohi" = Price (low to high)
-                - "hilo" = Price (high to low)
-
-        Returns:
-            bool: True if successful, False otherwise
-        """
+        """Select sort option from dropdown"""
         logger.debug(f"Selecting sort option: {option}")
 
         try:
             from selenium.webdriver.support.select import Select
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.webdriver.support import expected_conditions as EC
+            import time
 
-            # Find dropdown
-            dropdown_element = self.find_element(self.SORT_DROPDOWN)
+            # Find and select
+            dropdown = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located(self.SORT_DROPDOWN)
+            )
 
-            # Create Select object
-            select = Select(dropdown_element)
-
-            # Select by value
+            select = Select(dropdown)
             select.select_by_value(option)
 
-            # Get selected option for confirmation
-            selected_option = select.first_selected_option
-            logger.info(f"✅ Selected sort: '{selected_option.text}' (value: {option})")
+            # Wait for sort to apply
+            time.sleep(2)
 
+            # Verify (but this time, if it fails, we actually fail!)
+            dropdown_new = self.find_element(self.SORT_DROPDOWN)
+            select_new = Select(dropdown_new)
+            actual_value = select_new.first_selected_option.get_attribute("value")
+
+            if actual_value != option:
+                raise Exception(f"Sort failed! Expected {option}, got {actual_value}")
+
+            logger.info(f"✅ Successfully sorted by: {option}")
             return True
 
         except Exception as e:

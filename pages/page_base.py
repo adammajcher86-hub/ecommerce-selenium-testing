@@ -62,8 +62,12 @@ class BasePage:
 
     def get_text(self, locator):
         """Get text from element"""
-        element = self.find_element(locator)
-        return element.text
+        try:
+            element = self.find_element(locator)
+            return element.text
+        except Exception as e:
+            logger.error(f"Failed to locate element {locator}: {e}")
+            return False
 
     def is_visible(self, locator, timeout=EXPLICIT_WAIT):
         """Check if element is visible"""
@@ -71,7 +75,8 @@ class BasePage:
             wait = WebDriverWait(self.driver, timeout)
             wait.until(EC.visibility_of_element_located(locator))
             return True
-        except TimeoutException:
+        except Exception as e:
+            logger.error(f"Element is not visible {locator}: {e}")
             return False
 
     def is_present(self, locator, timeout=EXPLICIT_WAIT):
@@ -80,7 +85,8 @@ class BasePage:
             wait = WebDriverWait(self.driver, timeout)
             wait.until(EC.presence_of_element_located(locator))
             return True
-        except TimeoutException:
+        except Exception as e:
+            logger.error(f"Element is not present in DOM {locator}: {e}")
             return False
 
     def get_current_url(self):

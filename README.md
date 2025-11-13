@@ -9,12 +9,13 @@
 ## 🚀 Features
 
 - Page Object Model design pattern
-- Comprehensive test coverage (6 login tests)
+- Comprehensive test coverage (6 login tests and 6 products tests)
 - Screenshot on failure
 - Detailed logging
 - Cross-browser support
 - CI/CD with GitHub Actions
 - Headless mode for fast execution
+- Report available in every execution
 
 ## 🧪 Running Tests
 ```bash
@@ -29,7 +30,31 @@ pytest -v -m smoke tests/
 
 # Run with HTML report
 pytest -v --html=reports/report.html tests/
+
+#Run separate test cases
+ pytest -v -s -k "test_sort_products_by_price_low_to_high or test_sort_products_by_name_z_to_a" --log-cli-level=DEBUG --headless
 ```
+
+🔍 Debugging with Logs
+```
+Tests include detailed logging. View logs during test execution:
+
+# Standard logging
+pytest -v --log-cli-level=INFO tests/
+
+# Detailed debugging
+pytest -v --log-cli-level=DEBUG tests/
+
+# Save logs to file
+pytest -v --log-file=test_run.log tests/
+```
+
+Log levels:
+
+    INFO - Test progress and results ✅
+    WARNING - Retry attempts and fallbacks ⚠️
+    DEBUG - Detailed request/response data 🔍
+    ERROR - Critical failures ❌
 
 ## 📊 CI/CD
 

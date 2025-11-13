@@ -13,7 +13,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from config.config import (
     DEFAULT_BROWSER,
-    HEADLESS,
     IMPLICIT_WAIT,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
@@ -24,28 +23,42 @@ from config.config import (
 logger = logging.getLogger(__name__)
 
 
-def get_chrome_options():
+def get_chrome_options(headless=False):
     """Configure Chrome options"""
     options = webdriver.ChromeOptions()
 
-    if HEADLESS:
+    if headless:
         options.add_argument("--headless=new")
         logger.info("Running Chrome in headless mode")
 
+    # Basic arguments
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
 
+    # Disable automation detection
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+
+    # Disable notifications, popups, and password manager
+    prefs = {
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False,
+        "profile.default_content_setting_values.notifications": 2,
+    }
+    options.add_experimental_option("prefs", prefs)
+
     return options
 
 
-def get_firefox_options():
+def get_firefox_options(headless=False):
     """Configure Firefox options"""
     options = webdriver.FirefoxOptions()
 
-    if HEADLESS:
+    if headless:
         options.add_argument("--headless")
         logger.info("Running Firefox in headless mode")
 
@@ -59,15 +72,21 @@ def driver(request):
     Scope: function - new browser instance for each test
     """
     browser = request.config.getoption("--browser", default=DEFAULT_BROWSER)
-    logger.info(f"Initializing {browser} browser")
+    headless = request.config.getoption("--headless")
+
+    logger.info(f"Initializing {browser} browser (headless={headless})")
 
     # Initialize driver based on browser choice
     if browser.lower() == "chrome":
         service = ChromeService(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=get_chrome_options())
+        driver = webdriver.Chrome(
+            service=service, options=get_chrome_options(headless=headless)
+        )
     elif browser.lower() == "firefox":
         service = FirefoxService(GeckoDriverManager().install())
-        driver = webdriver.Firefox(service=service, options=get_firefox_options())
+        driver = webdriver.Firefox(
+            service=service, options=get_firefox_options(headless=headless)
+        )
     else:
         raise ValueError(f"Unsupported browser: {browser}")
 
@@ -141,6 +160,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--headless",
         action="store_true",
-        default=HEADLESS,
+        default=False,  # ✅ Changed to False - browser visible by default
         help="Run browser in headless mode",
     )

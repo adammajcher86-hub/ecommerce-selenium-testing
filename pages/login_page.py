@@ -4,6 +4,9 @@ Represents the SauceDemo login page
 """
 
 import logging
+import time
+
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from pages.page_base import BasePage
 
@@ -50,6 +53,14 @@ class LoginPage(BasePage):
         self.enter_username(username)
         self.enter_password(password)
         self.click_login_button()
+        # Press ESC to close any popup
+        time.sleep(0.5)
+        try:
+            body = self.driver.find_element(By.TAG_NAME, "body")
+            body.send_keys(Keys.ESCAPE)
+        except Exception as e:
+            logger.debug(f"No popup to dismiss: {e}")
+            pass
 
     def get_error_message(self):
         """Get error message text"""
