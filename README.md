@@ -31,8 +31,8 @@ pytest -v -m smoke tests/
 # Run with HTML report
 pytest -v --html=reports/report.html tests/
 
-#Run separate test cases
- pytest -v -s -k "test_sort_products_by_price_low_to_high or test_sort_products_by_name_z_to_a" --log-cli-level=DEBUG --headless
+#Run separate tests
+pytest -v -s -k "test_sort_products_by_price_low_to_high or test_sort_products_by_name_z_to_a" --log-cli-level=DEBUG --headless
 ```
 
 🔍 Debugging with Logs
