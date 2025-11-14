@@ -9,7 +9,7 @@
 ## 🚀 Features
 
 - Page Object Model design pattern
-- Comprehensive test coverage (6 login tests and 6 products tests)
+- Comprehensive test coverage (6 login tests and 7 products tests)
 - Screenshot on failure
 - Detailed logging
 - Cross-browser support
