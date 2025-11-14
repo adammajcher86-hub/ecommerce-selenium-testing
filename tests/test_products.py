@@ -52,7 +52,6 @@ class TestProducts:
         logger.info(f"✅ All {count} products displayed")
 
     @pytest.mark.products
-    @pytest.mark.products
     def test_add_product_to_cart(self, driver):
         """Test adding a product to cart"""
         logger.info("Testing add product to cart")
@@ -156,3 +155,42 @@ class TestProducts:
         ), f"Names should be sorted Z to A: {names}"
 
         logger.info("✅ Products sorted correctly by name")
+
+    @pytest.mark.products
+    def test_add_two_products_and_checkout(self, driver):
+        """Test adding two products and checkout"""
+        logger.info("Testing add two products to cart and checkout")
+
+        # Login
+        login_page = LoginPage(driver)
+        login_page.open()
+        login_page.login(STANDARD_USER["username"], STANDARD_USER["password"])
+
+        products_page = ProductsPage(driver)
+        # Add 2 products
+        products_to_add = [
+            "Sauce Labs Bike Light",
+            "Sauce Labs Onesie",
+        ]
+
+        for product in products_to_add:
+            success = products_page.add_product_to_cart_by_name(product)
+            assert success, f"Failed to add {product}"
+
+        # Verify cart has 2 items
+        cart_count = products_page.get_cart_badge_count()
+
+        assert cart_count == 2, f"Cart should have 2 items, got {cart_count}"
+        logger.info("✅ Multiple products added successfully")
+        # Processing checkout
+        products_page.click_badge_count()
+        products_page.click_button("checkout")
+        products_page.enter_first_name("tmp_first_name")
+        products_page.enter_last_name("tmp_last_name")
+        products_page.enter_postal_code("tmp_postal_code")
+        products_page.click_button("continue")
+        products_page.click_button("finish")
+
+        assert products_page.checkout_complete_is_loaded(), "Checkout completed"
+        products_page.click_button("back")
+        assert products_page.is_loaded(), "Products page should be loaded"

@@ -4,10 +4,15 @@ Represents the SauceDemo products/inventory page
 """
 
 import logging
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from pages.page_base import BasePage
+from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
 
 logger = logging.getLogger(__name__)
 
@@ -16,11 +21,19 @@ class ProductsPage(BasePage):
     """Page Object for SauceDemo products page"""
 
     INVENTORY_CONTAINER = (By.ID, "inventory_container")
+    COMPLETE_HEADER = (By.CLASS_NAME, "complete-header")
     INVENTORY_ITEMS = (By.CLASS_NAME, "inventory_item")
     PRODUCT_NAMES = (By.CLASS_NAME, "inventory_item_name")
     PRODUCT_PRICES = (By.CLASS_NAME, "inventory_item_price")
     SORT_DROPDOWN = (By.CLASS_NAME, "product_sort_container")
-    SHOPPING_CART_BADGE = (By.CLASS_NAME, "shopping_cart_badge")
+    SHOPPING_CART_BADGE = (By.CSS_SELECTOR, ".shopping_cart_badge")
+    CHECKOUT_BUTTON = (By.ID, "checkout")
+    FIRST_NAME_INPUT = (By.ID, "first-name")
+    LAST_NAME_INPUT = (By.ID, "last-name")
+    POSTAL_CODE = (By.ID, "postal-code")
+    CHECKOUT_CONTINUE_BUTTON = (By.ID, "continue")
+    FINISH_BUTTON = (By.ID, "finish")
+    BACK_HOME_BUTTON = (By.ID, "back-to-products")
 
     def __init__(self, driver):
         super().__init__(driver)
@@ -43,6 +56,27 @@ class ProductsPage(BasePage):
         else:
             logger.warning(
                 f"⚠️ Products page not loaded - URL: {url_correct}, Element: {element_visible}"
+            )
+
+        return is_loaded
+
+    def checkout_complete_is_loaded(self):
+        """Check if checkout complete page is loaded"""
+        logger.debug("Checking if checkout complete page is loaded")
+
+        # Check URL contains 'inventory'
+        url_correct = "checkout-complete" in self.driver.current_url
+
+        # Check inventory container is visible
+        element_visible = self.is_visible(self.COMPLETE_HEADER, timeout=5)
+
+        is_loaded = url_correct and element_visible
+
+        if is_loaded:
+            logger.info("✅ Checkout complete page loaded successfully")
+        else:
+            logger.warning(
+                f"⚠️ checkout complete not loaded - URL: {url_correct}, Element: {element_visible}"
             )
 
         return is_loaded
@@ -190,11 +224,6 @@ class ProductsPage(BasePage):
         logger.debug(f"Selecting sort option: {option}")
 
         try:
-            from selenium.webdriver.support.select import Select
-            from selenium.webdriver.support.ui import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
-            import time
-
             # Find and select
             dropdown = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located(self.SORT_DROPDOWN)
@@ -220,3 +249,84 @@ class ProductsPage(BasePage):
         except Exception as e:
             logger.error(f"❌ Failed to select sort option '{option}': {e}")
             return False
+
+    def click_badge_count(self):
+        """Click on shopping cart badge. Returns 0 if not successful"""
+        try:
+            try:
+                body = self.driver.find_element(By.TAG_NAME, "body")
+                body.send_keys(Keys.ESCAPE)
+            except Exception as e:
+                logger.debug(f"No popup to dismiss: {e}")
+                pass
+            # Try to find visible badge (wait up to 5 seconds)
+            badge = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located(self.SHOPPING_CART_BADGE)
+            )
+            badge.click()
+            logger.info("✅ Badge click successfully")
+
+        except Exception as e:
+            # Badge doesn't exist
+            logger.debug(f"❌ No badge found: {e}")
+            return 0
+
+    def click_button(self, button_id):
+        f"""Click on {button_id}. Returns 0 if not successful"""
+        try:
+            badge = None
+            # Try to find visible checkout button (wait up to 5 seconds)
+            if button_id == "checkout":
+                badge = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located(self.CHECKOUT_BUTTON)
+                )
+            elif button_id == "continue":
+                badge = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located(self.CHECKOUT_CONTINUE_BUTTON)
+                )
+            elif button_id == "finish":
+                badge = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located(self.FINISH_BUTTON)
+                )
+            elif button_id == "back":
+                badge = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located(self.BACK_HOME_BUTTON)
+                )
+
+            badge.click()
+            logger.info(f"✅ {button_id} click successfully")
+
+        except Exception as e:
+            # Continue button not found
+            logger.debug(f"❌ No {button_id} button found: {e}")
+            return 0
+
+    def enter_first_name(self, first_name="first_name"):
+        """Enter first name in first name field"""
+        try:
+            logger.info("Entering first name field")
+            self.send_keys(self.FIRST_NAME_INPUT, first_name)
+        except Exception as e:
+            # First name field not found
+            logger.debug(f"❌ No first name field found: {e}")
+            return 0
+
+    def enter_last_name(self, last_name="last_name"):
+        """Enter last_name in last name field"""
+        try:
+            logger.info("Entering last name field")
+            self.send_keys(self.LAST_NAME_INPUT, last_name)
+        except Exception as e:
+            # Last name field not found
+            logger.debug(f"❌ No last name field found: {e}")
+            return 0
+
+    def enter_postal_code(self, postal_code="postal_code"):
+        """Enter postal code in postal code field"""
+        try:
+            logger.info("Entering postal code field")
+            self.send_keys(self.POSTAL_CODE, postal_code)
+        except Exception as e:
+            # Postal code field not found
+            logger.debug(f"❌ No postal code field found: {e}")
+            return 0

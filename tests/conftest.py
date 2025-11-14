@@ -29,25 +29,27 @@ def get_chrome_options(headless=False):
 
     if headless:
         options.add_argument("--headless=new")
-        logger.info("Running Chrome in headless mode")
 
-    # Basic arguments
+    # Basic args
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--start-maximized")
+    options.add_argument("--incognito")
+    options.add_argument("--disable-save-password-bubble")
 
-    # Disable automation detection
+    # Disable automation
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
 
-    # Disable notifications, popups, and password manager
+    # Disable everything
     prefs = {
         "credentials_enable_service": False,
         "profile.password_manager_enabled": False,
         "profile.default_content_setting_values.notifications": 2,
+        "autofill.profile_enabled": False,
     }
     options.add_experimental_option("prefs", prefs)
 
