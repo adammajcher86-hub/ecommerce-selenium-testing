@@ -17,6 +17,18 @@
 - Headless mode for fast execution
 - Report available in every execution
 
+### Login Tests
+- Successful login
+- Failed login scenarios
+- Error message validation
+
+### Products Tests
+- Product display validation
+- Add to cart functionality
+- Multiple items management
+- Sorting (by price, by name)
+- Full checkout flow 
+
 ## 🧪 Running Tests
 ```bash
 # Run all tests (visible browser)
@@ -31,7 +43,7 @@ pytest -v -m smoke tests/
 # Run with HTML report
 pytest -v --html=reports/report.html tests/
 
-#Run separate tests
+#Run two tests with debug output and headless mode
 pytest -v -s -k "test_sort_products_by_price_low_to_high or test_sort_products_by_name_z_to_a" --log-cli-level=DEBUG --headless
 ```
 
